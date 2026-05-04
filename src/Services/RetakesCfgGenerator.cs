@@ -40,14 +40,13 @@ public sealed class RetakesCfgGenerator
       if (!Directory.Exists(cfgDir)) Directory.CreateDirectory(cfgDir);
 
       if (!File.Exists(cfgPath))
-      {
         GenerateCfgFile(cfgPath, freezeTime);
-      }
+      else
+        UpdateFreezeTime(cfgPath, freezeTime);
 
       void ExecuteConfig()
       {
         _core.Engine.ExecuteCommand($"exec {CfgFolderName}/{CfgFileName}");
-        _core.Engine.ExecuteCommand($"mp_freezetime {freezeTime}");
       }
 
       // Execute immediately
@@ -65,6 +64,21 @@ public sealed class RetakesCfgGenerator
     {
       _logger.LogError(ex, "Retakes: failed to apply retakes.cfg");
     }
+  }
+
+  private static void UpdateFreezeTime(string cfgPath, int freezeTime)
+  {
+    var lines = File.ReadAllLines(cfgPath);
+    for (var i = 0; i < lines.Length; i++)
+    {
+      var trimmed = lines[i].TrimStart();
+      if (trimmed.StartsWith("mp_freezetime", StringComparison.OrdinalIgnoreCase))
+      {
+        lines[i] = $"mp_freezetime {freezeTime}";
+        break;
+      }
+    }
+    File.WriteAllLines(cfgPath, lines);
   }
 
   private void GenerateCfgFile(string cfgPath, int freezeTime)
