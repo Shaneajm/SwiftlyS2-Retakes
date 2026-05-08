@@ -349,7 +349,12 @@ public sealed class PlayerEventHandlers
     var attacker = @event.AttackerPlayer;
     if (attacker is null || !attacker.IsValid) return HookResult.Continue;
 
-    _damageReport.OnPlayerHurt(attacker, victim, @event.DmgHealth);
+   if (attacker.Pawn is null) return HookResult.Continue;
+   if (victim.Pawn is null) return HookResult.Continue;
+
+    var damage = @event.DmgHealth;
+
+    _damageReport.OnPlayerHurt(attacker, victim, damage);
     return HookResult.Continue;
   }
 
