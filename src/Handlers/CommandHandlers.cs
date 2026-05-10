@@ -33,6 +33,7 @@ public sealed class CommandHandlers
   private readonly IAllocationService _allocation;
 
   private readonly List<Guid> _commandGuids = new();
+  private readonly List<Guid> _aliasCommandGuids = new();
 
   public CommandHandlers(
     IMapConfigService mapConfig,
@@ -96,11 +97,31 @@ public sealed class CommandHandlers
     _commandGuids.Add(core.Command.RegisterCommand("reloadcfg", ReloadCfg, registerRaw: true, permission: RetakesPermissions.Root));
 
     _commandGuids.Add(core.Command.RegisterCommand("debugqueues", DebugQueues, registerRaw: true));
+
+    RegisterAliasCommands(core);
+  }
+
+  private void RegisterAliasCommands(ISwiftlyCore core)
+  {
+    foreach (var alias in _weaponAliasConfig.AllAliases)
+    {
+      var captured = alias;
+      _aliasCommandGuids.Add(core.Command.RegisterCommand(captured, ctx => SelectGunByAlias(ctx, captured), registerRaw: true));
+    }
+  }
+
+  private void UnregisterAliasCommands(ISwiftlyCore core)
+  {
+    foreach (var id in _aliasCommandGuids)
+      core.Command.UnregisterCommand(id);
+    _aliasCommandGuids.Clear();
   }
 
   public void Unregister(ISwiftlyCore core)
   {
     _spawnViz.HideSpawns();
+
+    UnregisterAliasCommands(core);
 
     foreach (var id in _commandGuids)
     {
@@ -1338,6 +1359,25 @@ public sealed class CommandHandlers
     ["p2000"] = "weapon_hkp2000",
   };
 
+  private void SelectGunByAlias(ICommandContext context, string alias)
+  {
+    if (!context.IsSentByPlayer || context.Sender is null)
+    {
+      context.Reply(Tr(context, "error.must_be_player"));
+      return;
+    }
+
+    var roundType = _allocation.CurrentRoundType;
+    if (roundType is null)
+    {
+      context.Reply(Tr(context, "command.gun.no_round"));
+      return;
+    }
+
+    var weaponName = ResolveWeaponName(alias);
+    HandleGunSelection(context, roundType.Value, weaponName);
+  }
+
   private void SelectGun(ICommandContext context)
   {
     if (!context.IsSentByPlayer || context.Sender is null)
@@ -1361,8 +1401,13 @@ public sealed class CommandHandlers
 
     var input = context.Args[0].Trim();
     var weaponName = ResolveWeaponName(input);
+    HandleGunSelection(context, roundType.Value, weaponName);
+  }
 
+  private void HandleGunSelection(ICommandContext context, RoundType roundType, string weaponName)
+  {
     var player = context.Sender;
+    if (player is null) return;
     var isCt = (Team)player.Controller.TeamNum == Team.CT;
     var weapons = _config.Config.Weapons;
     var pistols = weapons.Pistols;
@@ -1371,7 +1416,7 @@ public sealed class CommandHandlers
     var isPistol = pistols.Any(p => p.Equals(weaponName, StringComparison.OrdinalIgnoreCase));
 
     // Get allowed primaries for current round type
-    var allowedPrimaries = GetAllowedWeaponsForMenu(roundType.Value, isCt, isPrimary: true);
+    var allowedPrimaries = GetAllowedWeaponsForMenu(roundType, isCt, isPrimary: true);
     var isPrimary = allowedPrimaries.Any(p => p.Equals(weaponName, StringComparison.OrdinalIgnoreCase));
 
     // Resolve canonical weapon name from the config lists
@@ -1383,19 +1428,19 @@ public sealed class CommandHandlers
 
     if (canonicalName is null)
     {
-      context.Reply(Tr(context, "command.gun.not_allowed", WeaponDisplayName(weaponName), roundType.Value));
+      context.Reply(Tr(context, "command.gun.not_allowed", WeaponDisplayName(weaponName), roundType));
       return;
     }
 
     var displayName = WeaponDisplayName(canonicalName);
     var steamId = player.SteamID;
 
-    switch (roundType.Value)
+    switch (roundType)
     {
       case RoundType.Pistol:
         if (!isPistol)
         {
-          context.Reply(Tr(context, "command.gun.not_allowed", displayName, roundType.Value));
+          context.Reply(Tr(context, "command.gun.not_allowed", displayName, roundType));
           return;
         }
         if (IsAlreadyPreferred(_prefs.GetPistolPrimary(steamId, isCt), canonicalName))
@@ -1411,10 +1456,10 @@ public sealed class CommandHandlers
 
       case RoundType.HalfBuy:
       case RoundType.FullBuy:
-        var roundLabel = roundType.Value == RoundType.HalfBuy ? "HalfBuy" : "FullBuy";
+        var roundLabel = roundType == RoundType.HalfBuy ? "HalfBuy" : "FullBuy";
         if (isPrimary && !isPistol)
         {
-          var currentPrimary = roundType.Value == RoundType.HalfBuy
+          var currentPrimary = roundType == RoundType.HalfBuy
             ? _prefs.GetHalfBuyPack(steamId, isCt).Primary
             : _prefs.GetFullBuyPack(steamId, isCt).Primary;
           if (IsAlreadyPreferred(currentPrimary, canonicalName))
@@ -1422,7 +1467,7 @@ public sealed class CommandHandlers
             context.Reply(Tr(context, "command.gun.already_set", displayName));
             return;
           }
-          if (roundType.Value == RoundType.HalfBuy)
+          if (roundType == RoundType.HalfBuy)
             _prefs.SetHalfBuyPrimary(steamId, isCt, canonicalName);
           else
             _prefs.SetFullBuyPrimary(steamId, isCt, canonicalName);
@@ -1432,7 +1477,7 @@ public sealed class CommandHandlers
         }
         else if (isPistol)
         {
-          var currentSecondary = roundType.Value == RoundType.HalfBuy
+          var currentSecondary = roundType == RoundType.HalfBuy
             ? _prefs.GetHalfBuyPack(steamId, isCt).Secondary
             : _prefs.GetFullBuyPack(steamId, isCt).Secondary;
           if (IsAlreadyPreferred(currentSecondary, canonicalName))
@@ -1440,7 +1485,7 @@ public sealed class CommandHandlers
             context.Reply(Tr(context, "command.gun.already_set", displayName));
             return;
           }
-          if (roundType.Value == RoundType.HalfBuy)
+          if (roundType == RoundType.HalfBuy)
             _prefs.SetHalfBuySecondary(steamId, isCt, canonicalName);
           else
             _prefs.SetFullBuySecondary(steamId, isCt, canonicalName);
@@ -1450,7 +1495,7 @@ public sealed class CommandHandlers
         }
         else
         {
-          context.Reply(Tr(context, "command.gun.not_allowed", displayName, roundType.Value));
+          context.Reply(Tr(context, "command.gun.not_allowed", displayName, roundType));
         }
         break;
     }
@@ -1503,10 +1548,15 @@ public sealed class CommandHandlers
 
   private void ReloadCfg(ICommandContext context)
   {
+    var core = _core;
     try
     {
       _config.LoadOrCreate();
+      if (core is not null)
+        UnregisterAliasCommands(core);
       _weaponAliasConfig.LoadOrCreate();
+      if (core is not null)
+        RegisterAliasCommands(core);
       _config.ApplyToConvars(restartGame: true);
       context.Reply(Tr(context, "command.reloadcfg.success"));
     }

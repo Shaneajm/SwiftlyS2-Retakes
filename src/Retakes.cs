@@ -11,7 +11,7 @@ using SwiftlyS2_Retakes.Logging;
 
 namespace SwiftlyS2_Retakes;
 
-[PluginMetadata(Id = "Retakes", Version = "1.4.5", Name = "Retakes", Author = "aga", Description = "No description.")]
+[PluginMetadata(Id = "Retakes", Version = "1.4.6", Name = "Retakes", Author = "aga", Description = "No description.")]
 
 public partial class SwiftlyS2_Retakes : BasePlugin
 {
@@ -140,8 +140,8 @@ public partial class SwiftlyS2_Retakes : BasePlugin
             _config!.ApplyToConvars(false);
             Core.Scheduler.DelayBySeconds(0.5f, () =>
         {
-              _config!.ApplyToConvars(false);
-          });
+            _config!.ApplyToConvars(false);
+        });
         });
 
         // Register handlers

@@ -15,4 +15,9 @@ public interface IWeaponAliasConfigService
   /// Loads the alias config from disk, creating a default file if none exists.
   /// </summary>
   void LoadOrCreate();
+
+  /// <summary>
+  /// All registered alias keys (e.g. "ak", "xm", "deagle").
+  /// </summary>
+  IReadOnlyCollection<string> AllAliases { get; }
 }

@@ -32,6 +32,8 @@ public sealed class WeaponAliasConfigService : IWeaponAliasConfigService
     LoadOrCreate();
   }
 
+  public IReadOnlyCollection<string> AllAliases => _aliases.Keys;
+
   public bool TryResolve(string input, out string weaponName)
   {
     if (_aliases.TryGetValue(input, out var found))
@@ -46,7 +48,7 @@ public sealed class WeaponAliasConfigService : IWeaponAliasConfigService
 
   public void LoadOrCreate()
   {
-    var path = Path.Combine(_core.PluginPath, "resources", "guns.jsonc");
+    var path = _core.Configuration.GetConfigPath("guns.jsonc");
 
     if (!File.Exists(path))
     {
@@ -88,21 +90,41 @@ public sealed class WeaponAliasConfigService : IWeaponAliasConfigService
         Directory.CreateDirectory(dir);
 
       const string defaultContent = """
-// guns.jsonc — Custom weapon aliases for the !gun command.
-//
-// Format: "weapon_entity_name": ["alias1", "alias2", ...]
-//
-// Examples:
-//   "weapon_ak47":         ["ak", "ak47"]
-//   "weapon_m4a1_silencer": ["m4a1s", "m4s"]
-//   "weapon_awp":          ["awp", "sniper"]
-//
-// Aliases are case-insensitive. Run !reloadcfg after editing this file.
-
 {
-  // "weapon_ak47":          ["ak", "ak47"],
-  // "weapon_m4a1_silencer": ["m4a1s", "m4s"],
-  // "weapon_awp":           ["awp", "sniper"]
+  "weapon_ak47":          ["ak", "ak47"],
+  "weapon_m4a1":          ["m4a4", "m4"],
+  "weapon_m4a1_silencer": ["m4a1s", "m4s"],
+  "weapon_aug":           ["aug"],
+  "weapon_sg556":         ["sg", "sg556", "krieg"],
+  "weapon_galilar":       ["galil", "galilar"],
+  "weapon_famas":         ["famas"],
+  "weapon_awp":           ["awp", "sniper"],
+  "weapon_ssg08":         ["scout", "ssg", "ssg08"],
+  "weapon_scar20":        ["scar20", "scar"],
+  "weapon_g3sg1":         ["g3sg1", "g3"],
+  "weapon_mp9":           ["mp9"],
+  "weapon_mp7":           ["mp7"],
+  "weapon_mp5sd":         ["mp5", "mp5sd"],
+  "weapon_mac10":         ["mac10", "mac"],
+  "weapon_ump45":         ["ump", "ump45"],
+  "weapon_p90":           ["p90"],
+  "weapon_bizon":         ["bizon"],
+  "weapon_nova":          ["nova"],
+  "weapon_xm1014":        ["xm1014", "xm"],
+  "weapon_mag7":          ["mag7", "mag"],
+  "weapon_sawedoff":      ["sawedoff", "sawed"],
+  "weapon_m249":          ["m249"],
+  "weapon_negev":         ["negev"],
+  "weapon_deagle":        ["deagle", "de"],
+  "weapon_elite":         ["elite", "dualies"],
+  "weapon_fiveseven":     ["fiveseven", "five7"],
+  "weapon_glock":         ["glock"],
+  "weapon_hkp2000":       ["p2000", "hkp2000"],
+  "weapon_p250":          ["p250"],
+  "weapon_usp_silencer":  ["usp", "usps"],
+  "weapon_tec9":          ["tec9", "tec"],
+  "weapon_cz75a":         ["cz75", "cz"],
+  "weapon_revolver":      ["revolver", "r8"]
 }
 """;
 
