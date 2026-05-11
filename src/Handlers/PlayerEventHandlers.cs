@@ -267,7 +267,21 @@ public sealed class PlayerEventHandlers
     {
       return HookResult.Continue;
     }
-    _pawnLifecycle.OnPlayerSpawn(player);
+
+    var core = _core;
+    var spawnPlayer = player;
+    if (core is not null)
+    {
+      core.Scheduler.NextTick(() =>
+      {
+        if (spawnPlayer is null || !spawnPlayer.IsValid) return;
+        _pawnLifecycle.OnPlayerSpawn(spawnPlayer);
+      });
+    }
+    else
+    {
+      _pawnLifecycle.OnPlayerSpawn(player);
+    }
 
     if (!_config.Config.Weapons.BuyMenuEnabled)
     {
