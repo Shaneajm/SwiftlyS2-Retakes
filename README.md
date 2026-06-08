@@ -92,6 +92,7 @@ The plugin saves player preferences using the [Cookies](https://github.com/Swift
 | Field | Default | Description |
 | :--- | :--- | :--- |
 | `Preferences.UsePerTeamPreferences` | `true` | Separate T/CT weapon preferences in `!guns` |
+| `Preferences.SpawnMenuEnabled` | `true` | Enable the CT spawn selection menu (`!spawns` and the toggle in `!retake`). When `false`, the feature is hidden everywhere and CTs are always auto-assigned spawns regardless of any saved preference |
 | `Preferences.DatabaseConnectionName` | `"default"` | Cookies database connection name |
 
 ---
