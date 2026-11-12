@@ -1,6 +1,7 @@
 using SwiftlyS2.Shared.GameEventDefinitions;
 using SwiftlyS2.Shared;
 using SwiftlyS2.Shared.Misc;
+using SwiftlyS2.Shared.Natives;
 using SwiftlyS2.Shared.Players;
 using SwiftlyS2.Shared.Convars;
 using SwiftlyS2_Retakes.Interfaces;
@@ -637,8 +638,21 @@ public sealed class RoundEventHandlers
     return HookResult.Continue;
   }
 
+  // TEMP FIX: suppress round restart message unless its a real restart
+  private void SuppressRestartMessage(byte reason)
+  {
+    var rules = _core?.EntitySystem?.GetGameRules();
+    if (rules is null || !rules.GameRestart) return;
+    if (reason == (byte)RoundEndReason.GameCommencing) return;
+
+    rules.GameRestart = false;
+    rules.GameRestartUpdated();
+  }
+
   private HookResult OnRoundEnd(EventRoundEnd @event)
   {
+    SuppressRestartMessage(@event.Reason);
+
     var winner = (Team)@event.Winner;
     if (winner == Team.T || winner == Team.CT)
     {
