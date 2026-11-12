@@ -151,6 +151,8 @@ public sealed class PlayerEventHandlers
 
   private HookResult OnPlayerTeamPre(EventPlayerTeam @event)
   {
+    @event.Silent = true;
+
     // Allow programmatic team changes (e.g., team balance, queue moves)
     if (_state.TeamChangeBypassEnabled) return HookResult.Continue;
 
